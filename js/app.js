@@ -1,11 +1,13 @@
 const screenStart = document.getElementById("screen-start");
 const screenSwipe = document.getElementById("screen-swipe");
 const screenResult = document.getElementById("screen-result");
+const screenLoading = document.getElementById("screen-loading")
 const appHeader = document.getElementById("appHeader")
 const catImg = document.getElementById("cat-image");
 catImg.setAttribute("draggable", "false");
 const likedCats = document.getElementById("liked-cats");
 const result = document.getElementById("result");
+const counter = document.getElementById("catCounter");
 
 let totalCats;
 let catUrls = [];
@@ -14,20 +16,30 @@ let currentIndex = 0;
 
 function showStart() {
     screenStart.classList.remove("hidden");
+    screenLoading.classList.add("hidden")
     screenSwipe.classList.add("hidden");
     screenResult.classList.add("hidden");
 }
 
 function showSwipe() {
     screenStart.classList.add("hidden");
+    screenLoading.classList.add("hidden")
     screenSwipe.classList.remove("hidden");
     screenResult.classList.add("hidden");
 }
 
 function showResult() {
     screenStart.classList.add("hidden");
+    screenLoading.classList.add("hidden")
     screenSwipe.classList.add("hidden");
     screenResult.classList.remove("hidden");
+}
+
+function showLoading() {
+    screenStart.classList.add("hidden");
+    screenLoading.classList.remove("hidden")
+    screenSwipe.classList.add("hidden");
+    screenResult.classList.add("hidden");
 }
 
 async function loadCats(count) {
@@ -42,11 +54,25 @@ async function loadCats(count) {
     return urls;
 }
 
+async function preLoading(urls) {
+    return Promise.all(
+        urls.map(url => {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.src = url;
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        })
+    );
+}
+
 async function startSwiping() {
     liked = [];
     currentIndex = 0;
-
+    showLoading();
     catUrls = await loadCats(totalCats);
+    await preLoading(catUrls);
 
     showCat(currentIndex);
     showSwipe();
@@ -57,7 +83,17 @@ function showCat(index) {
         finishSession();
         return;
     }
-    catImg.src = catUrls[index];
+    showLoading();
+    updateCounter();
+
+    const url = catUrls[index];
+    const img = new Image();
+    img.src = url;
+
+    img.onload = () => {
+        catImg.src = url;
+        showSwipe();
+    };
 }
 
 async function likeCat() {
@@ -72,6 +108,10 @@ async function dislikeCat() {
 function nextCat() {
     currentIndex++;
     showCat(currentIndex);
+}
+
+function updateCounter() {
+    counter.textContent = `${currentIndex + 1} out of ${totalCats} Cats`;
 }
 
 function finishSession() {
